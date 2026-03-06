@@ -48,7 +48,7 @@ def start_scheduler() -> None:
     # 매일 오후 19:00
     scheduler.add_job(
         _run_save_news,
-        trigger=CronTrigger(hour=18, minute=15, timezone="Asia/Seoul"),
+        trigger=CronTrigger(hour=17, minute=10, timezone="Asia/Seoul"),
         id="news_save_evening",
         name="뉴스 저장 (오후)",
         replace_existing=True,
