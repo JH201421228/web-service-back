@@ -21,6 +21,8 @@ class News(Base):
     answer_index = Column(Integer, nullable=True, comment="정답")
     explanation = Column(String(255), nullable=True, comment="설명")
     when = Column(Integer, default=0, comment="오전: 0, 오후: 1")
+    url = Column(String(255), nullable=True, comment="뉴스 URL")
+    date = Column(String(255), nullable=True, comment="뉴스 날짜")
     created_at = Column(DateTime, server_default=func.now(), comment="생성일시")
     updated_at = Column(
         DateTime,

@@ -81,6 +81,8 @@ def save_news(section_id: int = 100, count: int = 5) -> None:
                 answer_index=quiz.get("answer_index", 0),
                 explanation=quiz.get("explanation", "")[:255],
                 when=_when_flag(),
+                url=url[:255],
+                date=datetime.now().strftime("%Y-%m-%d"),
             )
             session.add(news)
             saved += 1

@@ -1,31 +1,79 @@
 """
-뉴스 요약 서비스 레이어
+뉴스 서비스 레이어
 
-lib/news_summary.py 의 핵심 로직을 감싸는 서비스 함수 모음.
-라우터 → 서비스 → lib 순서로 호출됩니다.
+라우터 → 서비스 → DB 순서로 호출됩니다.
 """
 
-from app.NewsBase.util.news_summary import process_news_url
-from app.NewsBase.schemas.news import NewsSummaryResponse, QuizSchema
+from typing import List
+
+from sqlalchemy.orm import Session
+
+from app.NewsBase.models.news import News
+from app.NewsBase.schemas.news import NewsResponse, QuizSchema
 
 
-def get_news_summary(url: str) -> NewsSummaryResponse:
+def get_news_list(db: Session, section_id: int, date: str, when: int) -> List[NewsResponse]:
     """
-    뉴스 URL을 받아 요약 + 4지선다 퀴즈를 반환합니다.
+    섹션 ID, 날짜, 오전/오후(when) 기준으로 뉴스 목록을 DB에서 조회해 반환합니다.
 
-    Raises:
-        ValueError: URL 접근 불가 또는 본문 추출 실패
-        RuntimeError: OpenAI API 오류
+    Args:
+        db         : SQLAlchemy 세션 (의존성 주입)
+        section_id : 네이버 뉴스 섹션 ID (100=정치, 101=경제 ...)
+        date       : 조회 날짜 (YYYY-MM-DD)
+        when       : 0=오전, 1=오후
+    Returns:
+        해당 조건에 맞는 NewsResponse 리스트
     """
-    result = process_news_url(url)
-
-    return NewsSummaryResponse(
-        title=result["title"],
-        summary=result["summary"],
-        quiz=QuizSchema(
-            question=result["quiz"]["question"],
-            options=result["quiz"]["options"],
-            answer_index=result["quiz"]["answer_index"],
-            explanation=result["quiz"]["explanation"],
-        ),
+    rows: List[News] = (
+        db.query(News)
+        .filter(
+            News.section_id == section_id,
+            News.date == date,
+            News.when == when,
+        )
+        .order_by(News.nid.desc())
+        .all()
     )
+
+    result = []
+    for row in rows:
+        result.append(
+            NewsResponse(
+                nid=row.nid,
+                section_id=row.section_id,
+                title=row.title or "",
+                summary=row.summary or "",
+                quiz=QuizSchema(
+                    question=row.question or "",
+                    options=[
+                        row.option1 or "",
+                        row.option2 or "",
+                        row.option3 or "",
+                        row.option4 or "",
+                    ],
+                    answer_index=row.answer_index or 0,
+                    explanation=row.explanation or "",
+                ),
+                when=row.when,
+                url=row.url or "",
+                date=row.date or "",
+                created_at=row.created_at.isoformat() if row.created_at else "",
+                updated_at=row.updated_at.isoformat() if row.updated_at else "",
+            )
+        )
+
+    return result
+
+
+def count_date_news(db: Session, date: str, when: int) -> int:
+    """
+    날짜 기준으로 뉴스 개수를 조회해 반환합니다.
+
+    Args:
+        db         : SQLAlchemy 세션 (의존성 주입)
+        date       : 조회 날짜 (YYYY-MM-DD)
+        when       : 0=오전, 1=오후
+    Returns:
+        해당 날짜의 뉴스 개수
+    """
+    return db.query(News).filter(News.date == date, News.when == when).count()

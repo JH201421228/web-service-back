@@ -1,29 +1,25 @@
-from pydantic import BaseModel, HttpUrl, field_validator
-from typing import List
-
-
-class NewsSummaryRequest(BaseModel):
-    url: str
-
-    @field_validator("url")
-    @classmethod
-    def url_must_not_be_empty(cls, v: str) -> str:
-        v = v.strip()
-        if not v:
-            raise ValueError("url은 비어 있을 수 없습니다.")
-        if not v.startswith("http"):
-            raise ValueError("유효한 URL을 입력해 주세요.")
-        return v
+from pydantic import BaseModel
+from typing import List, Optional
 
 
 class QuizSchema(BaseModel):
     question: str
-    options: List[str]       # 4개
-    answer_index: int        # 0-based
+    options: List[str]
+    answer_index: int
     explanation: str
 
 
-class NewsSummaryResponse(BaseModel):
-    title: str
-    summary: str
+class NewsResponse(BaseModel):
+    nid: int
+    section_id: Optional[int]
+    title: Optional[str]
+    summary: Optional[str]
     quiz: QuizSchema
+    when: int
+    url: Optional[str]
+    date: Optional[str]
+    created_at: str
+    updated_at: str
+
+    class Config:
+        from_attributes = True

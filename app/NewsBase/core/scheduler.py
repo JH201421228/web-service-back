@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 # 수집할 섹션 ID 목록 및 기사 수
 _SECTION_IDS = [100, 101, 102, 103, 104, 105]   # 필요하면 추가: 101(경제), 102(사회) 등
-_COUNT_PER_SECTION = 1
+_COUNT_PER_SECTION = 5
 
 scheduler = AsyncIOScheduler(timezone="Asia/Seoul")
 
@@ -38,7 +38,7 @@ def start_scheduler() -> None:
     # 매일 오전 08:00
     scheduler.add_job(
         _run_save_news,
-        trigger=CronTrigger(hour=8, minute=0, timezone="Asia/Seoul"),
+        trigger=CronTrigger(hour=7, minute=10, timezone="Asia/Seoul"),
         id="news_save_morning",
         name="뉴스 저장 (오전)",
         replace_existing=True,
@@ -48,7 +48,7 @@ def start_scheduler() -> None:
     # 매일 오후 19:00
     scheduler.add_job(
         _run_save_news,
-        trigger=CronTrigger(hour=21, minute=10, timezone="Asia/Seoul"),
+        trigger=CronTrigger(hour=17, minute=10, timezone="Asia/Seoul"),
         id="news_save_evening",
         name="뉴스 저장 (오후)",
         replace_existing=True,

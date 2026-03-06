@@ -1,48 +1,66 @@
 """
-뉴스 요약 + 퀴즈 API 라우터
+뉴스 API 라우터
 
-POST /api/news/summary
-  - Body: { "url": "https://..." }
-  - Response: { "title", "summary", "quiz": { "question", "options", "answer_index", "explanation" } }
+GET /api/news/list?section_id=100&date=2026-03-04&when=0
+  - Response: List[NewsResponse]
 """
 
-from fastapi import APIRouter, HTTPException, status
+from typing import List
 
-from app.NewsBase.schemas.news import NewsSummaryRequest, NewsSummaryResponse
-from app.NewsBase.services.news import get_news_summary
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.orm import Session
+
+from app.NewsBase.core.deps import get_db
+from app.NewsBase.schemas.news import NewsResponse
+from app.NewsBase.services.news import get_news_list, count_date_news
 
 router = APIRouter(prefix="/news", tags=["News"])
 
 
-@router.post(
-    "/summary",
-    response_model=NewsSummaryResponse,
-    summary="뉴스 요약 & 4지선다 퀴즈 생성",
+@router.get(
+    "/list",
+    response_model=List[NewsResponse],
+    summary="뉴스 목록 조회",
     description=(
-        "뉴스 URL을 전달하면 사실 기반 요약과 4지선다형 퀴즈를 반환합니다.\n\n"
-        "- `title`: 뉴스 제목\n"
-        "- `summary`: 사실만 담은 3~5문장 요약\n"
-        "- `quiz.question`: 퀴즈 질문\n"
-        "- `quiz.options`: 보기 4개 리스트\n"
-        "- `quiz.answer_index`: 정답 보기의 0-based 인덱스\n"
-        "- `quiz.explanation`: 정답 해설 (원문 근거)"
+        "섹션 ID, 날짜, 오전/오후 구분으로 저장된 뉴스 목록을 반환합니다.\n\n"
+        "- `section_id`: 네이버 뉴스 섹션 (100=정치, 101=경제, 102=사회, 103=생활문화, 104=세계, 105=IT과학)\n"
+        "- `date`: 조회 날짜 (YYYY-MM-DD)\n"
+        "- `when`: 0=오전, 1=오후"
     ),
 )
-async def summarize_news(body: NewsSummaryRequest) -> NewsSummaryResponse:
+def list_news(
+    section_id: int = Query(..., description="섹션 ID (예: 100)"),
+    date: str = Query(..., description="날짜 (YYYY-MM-DD)"),
+    when: int = Query(..., ge=0, le=1, description="0=오전, 1=오후"),
+    db: Session = Depends(get_db),
+) -> List[NewsResponse]:
     try:
-        return get_news_summary(body.url)
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=str(e),
-        )
-    except RuntimeError as e:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=str(e),
-        )
+        return get_news_list(db=db, section_id=section_id, date=date, when=when)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"예상치 못한 오류가 발생했습니다: {e}",
+            detail=f"뉴스 목록 조회 중 오류가 발생했습니다: {e}",
+        )
+
+@router.get(
+    "/count",
+    response_model=int,
+    summary="뉴스 개수 조회",
+    description=(
+        "날짜 기준으로 저장된 뉴스 개수를 반환합니다.\n\n"
+        "- `date`: 조회 날짜 (YYYY-MM-DD)\n"
+        "- `when`: 0=오전, 1=오후"
+    ),
+)
+def count_news(
+    date: str = Query(..., description="날짜 (YYYY-MM-DD)"),
+    when: int = Query(..., ge=0, le=1, description="0=오전, 1=오후"),
+    db: Session = Depends(get_db),
+) -> int:
+    try:
+        return count_date_news(db=db, date=date, when=when)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"뉴스 개수 조회 중 오류가 발생했습니다: {e}",
         )
