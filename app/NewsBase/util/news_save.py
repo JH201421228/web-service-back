@@ -10,6 +10,7 @@ import sys
 import logging
 from datetime import datetime
 from pathlib import Path
+from datetime import datetime, timezone, timedelta
 
 # BE 루트(alembic.ini 위치)를 Python 경로에 추가 → app.NewsBase.* import 가능
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
@@ -38,8 +39,9 @@ _Session = sessionmaker(autocommit=False, autoflush=False, bind=_engine)
 # ---------------------------------------------------------------------------
 
 def _when_flag() -> int:
-    """현재 시각 기준 오전(0) / 오후(1) 반환"""
-    return 0 if datetime.now().hour < 12 else 1
+    KST = timezone(timedelta(hours=9))
+    """현재 시각 기준 오전(0) / 오후(1) 반환 (KST 기준)"""
+    return 0 if datetime.now(tz=KST).hour < 12 else 1
 
 
 def save_news(section_id: int = 100, count: int = 5) -> None:
