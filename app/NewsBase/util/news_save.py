@@ -71,6 +71,8 @@ def save_news(section_id: int = 100, count: int = 5) -> None:
             quiz = result.get("quiz", {})
             options = quiz.get("options", ["", "", "", ""])
 
+            KST = timezone(timedelta(hours=9))
+
             news = News(
                 section_id=section_id,
                 title=result.get("title", "")[:255],
@@ -84,7 +86,7 @@ def save_news(section_id: int = 100, count: int = 5) -> None:
                 explanation=quiz.get("explanation", "")[:255],
                 when=_when_flag(),
                 url=url[:255],
-                date=datetime.now().strftime("%Y-%m-%d"),
+                date=datetime.now(tz=KST).strftime("%Y-%m-%d"),
             )
             session.add(news)
             saved += 1
