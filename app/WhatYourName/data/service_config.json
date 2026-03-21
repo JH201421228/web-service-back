@@ -1,0 +1,24 @@
+{
+  "languages": [
+    "en",
+    "ja",
+    "zh",
+    "es"
+  ],
+  "ko_max_len": 16,
+  "embedding_dim": 128,
+  "gender2id": {
+    "M": 0,
+    "F": 1,
+    "U": 2,
+    "UNK": 3
+  },
+  "onnx_inputs": [
+    "input_ids",
+    "gender_ids"
+  ],
+  "onnx_output": "embedding",
+  "vector_pattern": "{lang}_candidate_vectors.npy",
+  "meta_pattern": "{lang}_candidate_meta.parquet",
+  "score_type": "inner_product_on_normalized_vectors"
+}

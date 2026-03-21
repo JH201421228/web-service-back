@@ -66,9 +66,10 @@ app.add_middleware(
 # API 라우터 등록
 from app.NewsBase.api.v1 import api_router  # noqa: E402
 from app.NewsBase.core.deps import get_db    # noqa: E402
+from app.WhatYourName.api.v1 import api_router as what_router  # noqa: E402
 
 app.include_router(api_router)
-
+app.include_router(what_router, prefix="/api/v1/whatyourname")
 
 # ---------------------------------------------------------------------------
 # 미들웨어
