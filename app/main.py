@@ -57,6 +57,7 @@ app.add_middleware(
         "http://127.0.0.1:5173",
         "https://newsbase-da15f.web.app",
         "https://newsbase.store",
+        "https://whatsyourname.shop",
     ],
     allow_credentials=True,
     allow_methods=["*"],
