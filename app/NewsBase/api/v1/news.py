@@ -12,7 +12,17 @@ from sqlalchemy.orm import Session
 
 from app.NewsBase.core.deps import get_db
 from app.NewsBase.schemas.news import NewsResponse
+from app.NewsBase.schemas.news_comment import (
+    NewsCommentCreateRequest,
+    NewsCommentResponse,
+)
 from app.NewsBase.services.news import get_news_list, count_date_news
+from app.NewsBase.services.news_comment import (
+    NewsCommentLimitError,
+    NewsNotFoundError,
+    create_news_comment,
+    get_news_comments,
+)
 
 router = APIRouter(prefix="/news", tags=["News"])
 
@@ -23,7 +33,7 @@ router = APIRouter(prefix="/news", tags=["News"])
     summary="뉴스 목록 조회",
     description=(
         "섹션 ID, 날짜, 오전/오후 구분으로 저장된 뉴스 목록을 반환합니다.\n\n"
-        "- `section_id`: 네이버 뉴스 섹션 (100=정치, 101=경제, 102=사회, 103=생활문화, 104=세계, 105=IT과학)\n"
+        "- `section_id`: 뉴스 섹션 (200=주식, 201=비트코인, 100=정치, 101=경제, 102=사회, 103=생활문화, 104=세계, 105=IT과학)\n"
         "- `date`: 조회 날짜 (YYYY-MM-DD)\n"
         "- `when`: 0=오전, 1=오후"
     ),
@@ -63,4 +73,64 @@ def count_news(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"뉴스 개수 조회 중 오류가 발생했습니다: {e}",
+        )
+
+
+@router.get(
+    "/{nid}/comments",
+    response_model=List[NewsCommentResponse],
+    summary="뉴스 댓글 목록 조회",
+    description="특정 뉴스에 달린 익명 댓글 목록을 반환합니다.",
+)
+def list_news_comments(
+    nid: int,
+    db: Session = Depends(get_db),
+) -> List[NewsCommentResponse]:
+    try:
+        return get_news_comments(db=db, nid=nid)
+    except NewsNotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"뉴스 댓글 조회 중 오류가 발생했습니다: {e}",
+        )
+
+
+@router.post(
+    "/{nid}/comments",
+    response_model=NewsCommentResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="뉴스 댓글 작성",
+    description="특정 뉴스에 익명 댓글을 작성합니다. 댓글은 뉴스당 최대 100개까지 허용됩니다.",
+)
+def create_comment(
+    nid: int,
+    payload: NewsCommentCreateRequest,
+    db: Session = Depends(get_db),
+) -> NewsCommentResponse:
+    try:
+        return create_news_comment(db=db, nid=nid, payload=payload)
+    except NewsNotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
+    except NewsCommentLimitError as e:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(e),
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"뉴스 댓글 작성 중 오류가 발생했습니다: {e}",
         )

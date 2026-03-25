@@ -14,6 +14,7 @@ class NewsResponse(BaseModel):
     section_id: Optional[int]
     title: Optional[str]
     summary: Optional[str]
+    comment_count: int = 0
     quiz: QuizSchema
     when: int
     url: Optional[str]

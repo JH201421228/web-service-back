@@ -6,9 +6,11 @@
 
 from typing import List
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.NewsBase.models.news import News
+from app.NewsBase.models.news_comment import NewsComment
 from app.NewsBase.schemas.news import NewsResponse, QuizSchema
 
 
@@ -24,8 +26,21 @@ def get_news_list(db: Session, section_id: int, date: str, when: int) -> List[Ne
     Returns:
         해당 조건에 맞는 NewsResponse 리스트
     """
-    rows: List[News] = (
-        db.query(News)
+    comment_count_subquery = (
+        db.query(
+            NewsComment.news_id.label("news_id"),
+            func.count(NewsComment.comment_id).label("comment_count"),
+        )
+        .group_by(NewsComment.news_id)
+        .subquery()
+    )
+
+    rows = (
+        db.query(
+            News,
+            func.coalesce(comment_count_subquery.c.comment_count, 0).label("comment_count"),
+        )
+        .outerjoin(comment_count_subquery, comment_count_subquery.c.news_id == News.nid)
         .filter(
             News.section_id == section_id,
             News.date == date,
@@ -36,13 +51,14 @@ def get_news_list(db: Session, section_id: int, date: str, when: int) -> List[Ne
     )
 
     result = []
-    for row in rows:
+    for row, comment_count in rows:
         result.append(
             NewsResponse(
                 nid=row.nid,
                 section_id=row.section_id,
                 title=row.title or "",
                 summary=row.summary or "",
+                comment_count=int(comment_count or 0),
                 quiz=QuizSchema(
                     question=row.question or "",
                     options=[

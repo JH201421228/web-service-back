@@ -17,6 +17,7 @@ from app.NewsBase.db.base import Base
 from app.NewsBase.core.config import build_db_url
 from app.NewsBase.models.user import User          # noqa: F401  Alembic 감지용
 from app.NewsBase.models.news import News          # noqa: F401  Alembic 감지용
+from app.NewsBase.models.news_comment import NewsComment  # noqa: F401  Alembic 감지용
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
