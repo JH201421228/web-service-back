@@ -7,11 +7,13 @@ from sqlalchemy import engine_from_config, pool
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from app.NewsBase.core.config import build_db_url  # noqa: E402
-from app.NewsBase.db.base import Base  # noqa: E402
-from app.NewsBase.models.news import News  # noqa: F401, E402
-from app.NewsBase.models.news_comment import NewsComment  # noqa: F401, E402
-from app.NewsBase.models.user import User  # noqa: F401, E402
+from app.Tourist.core.config import build_tourist_db_url  # noqa: E402
+from app.Tourist.db.base import Base  # noqa: E402
+from app.Tourist.models.country_mapping import TouristCountryMapping  # noqa: F401, E402
+from app.Tourist.models.country_snapshot import TouristCountrySnapshot  # noqa: F401, E402
+from app.Tourist.models.data_source import TouristDataSource  # noqa: F401, E402
+from app.Tourist.models.monthly_statistic import TouristMonthlyStatistic  # noqa: F401, E402
+from app.Tourist.models.vaccination_reference import TouristVaccinationReference  # noqa: F401, E402
 
 config = context.config
 
@@ -21,8 +23,8 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 
-def get_url():
-    return build_db_url()
+def get_url() -> str:
+    return build_tourist_db_url()
 
 
 def run_migrations_offline() -> None:
@@ -32,6 +34,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        version_table="alembic_version_tourist",
     )
 
     with context.begin_transaction():
@@ -52,6 +55,7 @@ def run_migrations_online() -> None:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
+            version_table="alembic_version_tourist",
         )
 
         with context.begin_transaction():
