@@ -109,11 +109,14 @@ logger.info(
 
 from app.NewsBase.api.v1 import api_router as news_router  # noqa: E402
 from app.NewsBase.core.deps import get_db  # noqa: E402
+from app.Remember.api.v1 import api_router as remember_router  # noqa: E402
+from app.Remember.core.deps import get_remember_db  # noqa: E402
 from app.Tourist.api.v1 import api_router as tourist_router  # noqa: E402
 from app.Tourist.core.deps import get_tourist_db  # noqa: E402
 from app.WhatYourName.api.v1 import api_router as what_router  # noqa: E402
 
 app.include_router(news_router)
+app.include_router(remember_router)
 app.include_router(tourist_router)
 app.include_router(what_router, prefix="/api/v1/whatyourname")
 
@@ -163,3 +166,9 @@ def health_db(db: Session = Depends(get_db)):
 def health_tourist_db(db: Session = Depends(get_tourist_db)):
     db.execute(text("SELECT 1"))
     return {"status": "ok", "db": "tourist"}
+
+
+@app.get("/health/db/remember")
+def health_remember_db(db: Session = Depends(get_remember_db)):
+    db.execute(text("SELECT 1"))
+    return {"status": "ok", "db": "remember"}
