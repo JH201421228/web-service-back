@@ -15,6 +15,10 @@ from app.Tourist.core.scheduler import (
     start_scheduler as start_tourist_scheduler,
     stop_scheduler as stop_tourist_scheduler,
 )
+from app.Reaper.services.bot_scheduler import (
+    start_scheduler as start_reaper_scheduler,
+    stop_scheduler as stop_reaper_scheduler,
+)
 
 setup_logging(
     log_level="INFO",
@@ -32,7 +36,9 @@ async def lifespan(application: FastAPI):
     logger.info("Combinator API server starting")
     start_news_scheduler()
     start_tourist_scheduler()
+    start_reaper_scheduler()
     yield
+    stop_reaper_scheduler()
     stop_tourist_scheduler()
     stop_news_scheduler()
     logger.info("Combinator API server stopped")
@@ -48,11 +54,15 @@ app = FastAPI(
 DEFAULT_WEB_CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://localhost:5173",
+    "http://localhost:5174",
     "http://127.0.0.1:3000",
     "http://127.0.0.1:5173",
+    "http://127.0.0.1:5174",
     "https://newsbase-da15f.web.app",
     "https://newsbase.store",
     "https://whatsyourname.shop",
+    "https://reapear-game.web.app",
+    "https://reaper-game.shop",
 ]
 
 DEFAULT_TOURIST_CORS_ALLOWED_ORIGINS: list[str] = []
@@ -116,12 +126,14 @@ from app.Tamagotchi.core.deps import get_tamagotchi_db  # noqa: E402
 from app.Tourist.api.v1 import api_router as tourist_router  # noqa: E402
 from app.Tourist.core.deps import get_tourist_db  # noqa: E402
 from app.WhatYourName.api.v1 import api_router as what_router  # noqa: E402
+from app.Reaper.api.v1 import api_router as reaper_router  # noqa: E402
 
 app.include_router(news_router)
 app.include_router(remember_router)
 app.include_router(tamagotchi_router)
 app.include_router(tourist_router)
 app.include_router(what_router, prefix="/api/v1/whatyourname")
+app.include_router(reaper_router)
 
 
 @app.middleware("http")
