@@ -91,6 +91,11 @@ def _get_bot_scores(game_id: str) -> dict:
 def bot_submit_votes(game_id: str, vote_key: str, db: Session, candidates: Optional[list] = None):
     bots = _get_alive_bots(game_id, db)
     game_data = fdb.get_path(f"games/{game_id}/game") or {}
+
+    # 이미 투표 페이즈가 아니면 스킵
+    if game_data.get("phase") != "day_vote1":
+        return
+
     votes = game_data.get(vote_key, {}) or {}
     bot_scores = _get_bot_scores(game_id)
 
@@ -116,6 +121,13 @@ def bot_submit_votes(game_id: str, vote_key: str, db: Session, candidates: Optio
             chaos=profile["chaos"],
         )
         fdb.set_path(f"games/{game_id}/game/{vote_key}/{bot.uid}", target)
+
+    # 봇 투표 완료 후 전원 투표 여부 확인 → 즉시 페이즈 진행
+    try:
+        from app.Reaper.services.game_engine import _check_all_votes
+        _check_all_votes(game_id, db)
+    except Exception as e:
+        logger.warning("[Bot] _check_all_votes failed: %s", e)
 
 
 def bot_submit_night_actions(game_id: str, db: Session):
@@ -181,3 +193,10 @@ def bot_submit_night_actions(game_id: str, db: Session):
 
         fdb.set_path(f"games/{game_id}/game/night_actions/{bot.uid}", target)
         logger.debug("[Bot] %s night action -> %s", bot.uid, target)
+
+    # 봇 밤 행동 완료 후 전원 제출 여부 확인 → 즉시 밤 처리
+    try:
+        from app.Reaper.services.game_engine import _check_all_night_actions
+        _check_all_night_actions(game_id, db)
+    except Exception as e:
+        logger.warning("[Bot] _check_all_night_actions failed: %s", e)

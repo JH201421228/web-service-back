@@ -269,6 +269,8 @@ def generate_candidates(
         for tid in range(31, 43):
             if tid in (31, 32, 33) and turn == 1:  # 첫 턴에는 밤 결과 없음
                 continue
+            if tid in (40, 41):  # 직전 추방자 관련 단서 제외
+                continue
             truth = _eval_state_template(tid, game_state, my_role)
             if truth is None:
                 continue

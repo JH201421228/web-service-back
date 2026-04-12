@@ -12,9 +12,9 @@ logger = logging.getLogger(__name__)
 
 _scheduler: BackgroundScheduler | None = None
 
-DEFAULT_VOTE_DELAY_RANGE = (2, 8)
-DEFAULT_NIGHT_DELAY_RANGE = (3, 15)
-FAST_NIGHT_DELAY_RANGE = (0.35, 1.2)
+DEFAULT_VOTE_DELAY_RANGE = (0.5, 2)
+DEFAULT_NIGHT_DELAY_RANGE = (0.5, 3)
+FAST_NIGHT_DELAY_RANGE = (0.2, 0.8)
 
 
 def get_scheduler() -> BackgroundScheduler:

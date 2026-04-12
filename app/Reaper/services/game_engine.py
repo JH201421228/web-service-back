@@ -79,13 +79,6 @@ def _build_public_clues(players: list[ReaperPlayer], game_data: Optional[dict] =
             "지난밤 공격은 성공했습니다." if last_night else "지난밤 공격은 막혔습니다."
         )
 
-    prev_exiled_role = game_data.get("prev_exiled_role")
-    if prev_exiled_role is not None:
-        dynamic_clues.append(
-            "직전 추방자는 사신이었습니다."
-            if prev_exiled_role == ROLE_REAPER
-            else "직전 추방자는 선역이었습니다."
-        )
 
     special_count = sum(1 for player in alive_players if player.role in SPECIAL_ROLES)
     static_clues.append(
@@ -182,6 +175,14 @@ def start_game(game_id: str, db: Session) -> dict:
         raise ValueError("Not enough players")
 
     roles = assign_roles(len(players))
+
+    # 플레이어(index 0, seat 1)가 시민이 되지 않도록 보장
+    if roles[0] == ROLE_CITIZEN:
+        for i in range(1, len(roles)):
+            if roles[i] != ROLE_CITIZEN:
+                roles[0], roles[i] = roles[i], roles[0]
+                break
+
     for index, player in enumerate(players):
         player.role = roles[index]
         player.is_alive = True
@@ -242,9 +243,14 @@ def submit_night_action(game_id: str, player_uid: str, target_uid: str, db: Sess
 
 def _check_all_votes(game_id: str, db: Session):
     game_data = fdb.get_path(f"{_game_path(game_id)}/game") or {}
+    if game_data.get("phase") != "day_vote1":
+        return
     votes = game_data.get("votes", {}) or {}
     players_data = fdb.get_path(f"{_game_path(game_id)}/players") or {}
     alive_uids = [uid for uid, player in players_data.items() if player.get("is_alive")]
+
+    if not alive_uids:
+        return
 
     if all(uid in votes for uid in alive_uids):
         _process_vote1(game_id, game_data, db)
@@ -252,12 +258,17 @@ def _check_all_votes(game_id: str, db: Session):
 
 def _check_all_night_actions(game_id: str, db: Session):
     game_data = fdb.get_path(f"{_game_path(game_id)}/game") or {}
+    if game_data.get("phase") != "night":
+        return
     night_actions = game_data.get("night_actions", {}) or {}
     players = db.query(ReaperPlayer).filter(
         ReaperPlayer.game_id == game_id,
         ReaperPlayer.is_alive == True,
     ).all()
     actor_uids = [player.uid for player in players if player.role in NIGHT_ACTION_ROLES]
+
+    if not actor_uids:
+        return
 
     if all(uid in night_actions for uid in actor_uids):
         _process_night(game_id, game_data, players, db)
